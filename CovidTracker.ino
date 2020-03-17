@@ -35,6 +35,7 @@ const char* ssid = "yourNetwork";
 const char* password = "secretPassword";
 
 
+
 const String country = "Poland";//Country of intrest
 
 #define ALERT_PIN 33
@@ -105,11 +106,11 @@ int GetRequestFromSite()
     if (httpCode == 200)
     { //Check for the returning code
       uint8_t buff[128] = { 0 };//128
-      String mString;
 
       // get tcp stream
       WiFiClient * stream = http.getStreamPtr();
 
+      String twoLastStrings[2];// = (char *)buff;
       // read all data from server
       while (http.connected() ) {
         // get available data size
@@ -117,29 +118,37 @@ int GetRequestFromSite()
 
         if (size) {
           // read up to 128 byte
-          int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+          int c = stream->readBytes(buff, ((size > sizeof(buff) - 1) ? sizeof(buff) - 1 : size));
+          twoLastStrings[1] = "";
+          twoLastStrings[1] = twoLastStrings[0];
+          twoLastStrings[0] = "";
+          twoLastStrings[0] = (char *)buff;
 
-          String tempString = converter(buff);
+          String tempString = "";
+          tempString.concat(twoLastStrings[0]);
+          tempString.concat(twoLastStrings[1]); //converter(buff);
           int place = tempString.indexOf(country);
           if (place != -1) {
+
             place = place - country.length();
 
-            String myString;
-            myString.concat(tempString);
-            delay(1);
-            stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
-
-            myString.concat(converter(buff));
+            delay(10);
+            stream->readBytes(buff, ((size > sizeof(buff) - 1) ? sizeof(buff) - 1 : size));
+            tempString.concat((char *)buff);
+            String myString = tempString;
+            myString.concat((char *)buff);
             myString = myString.substring(myString.indexOf(country));
-
             String result = myString.substring(myString.indexOf("\">") + 2);
             String cases = result.substring(0, (result.indexOf("</")));
             if (
-              isValidNumber(cases)&&cases.toInt()!=0)
+              isValidNumber(cases) && cases.toInt() != 0)
+            {
+              http.end();
               return cases.toInt();
+            }
             else {
-              delay(1000);
-              GetRequestFromSite();
+              http.end();
+              return -1;
             }
           }
         }
@@ -150,11 +159,13 @@ int GetRequestFromSite()
     {
       Serial.print("Error on HTTP request ");
       Serial.println(httpCode);
-      return -1;
+
+
     }
 
     http.end(); //Free the resources
   }
+  return -1;
 }
 
 
@@ -169,23 +180,30 @@ void alarm() {
 
 void setup () {
   //button_init();
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
+    displayInfo(casesInCountry);
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0);
+    esp_sleep_enable_timer_wakeup(TIME_UNTIL_NEXT_SCAN);
+    esp_deep_sleep_start();
+  }
+
   ConnectToWifi();
   pinMode(ALERT_PIN, OUTPUT);
 
-  int temp = GetRequestFromSite();
-  if (casesInCountry != temp && temp != -1)
-  {
-    casesInCountry = temp;
-    alarm();
-    displayInfo(temp);
-    delay(1000);
-
+  int temp = -1;
+  while (temp == -1) {
+    temp = GetRequestFromSite();
+    if (casesInCountry != temp && temp != -1)
+    {
+      casesInCountry = temp;
+      alarm();
+      displayInfo(temp);
+      delay(1000);
+    }
   }
 
-  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
-    displayInfo(casesInCountry);
 
-  }
+
 
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0);
   esp_sleep_enable_timer_wakeup(TIME_UNTIL_NEXT_SCAN);
