@@ -35,7 +35,6 @@ const char* ssid = "yourNetwork";
 const char* password = "secretPassword";
 
 
-
 const String country = "Poland";//Country of intrest
 
 #define ALERT_PIN 33
@@ -83,10 +82,6 @@ void setupDisplay()
   tft.setTextSize(4);
 }
 
-String converter(uint8_t *str) {
-  return String((char *)str);
-}
-
 void displayInfo(int count) {
   setupDisplay();
   tft.setCursor(0, 0);
@@ -105,7 +100,7 @@ int GetRequestFromSite()
 
     if (httpCode == 200)
     { //Check for the returning code
-      uint8_t buff[128] = { 0 };//128
+      uint8_t buff[128] = { 0 };
 
       // get tcp stream
       WiFiClient * stream = http.getStreamPtr();
@@ -119,14 +114,14 @@ int GetRequestFromSite()
         if (size) {
           // read up to 128 byte
           int c = stream->readBytes(buff, ((size > sizeof(buff) - 1) ? sizeof(buff) - 1 : size));
-          twoLastStrings[1] = "";
-          twoLastStrings[1] = twoLastStrings[0];
           twoLastStrings[0] = "";
-          twoLastStrings[0] = (char *)buff;
+          twoLastStrings[0] = twoLastStrings[1];
+          twoLastStrings[1] = "";
+          twoLastStrings[1] = (char *)buff;
 
           String tempString = "";
           tempString.concat(twoLastStrings[0]);
-          tempString.concat(twoLastStrings[1]); //converter(buff);
+          tempString.concat(twoLastStrings[1]);
           int place = tempString.indexOf(country);
           if (place != -1) {
 
@@ -193,6 +188,7 @@ void setup () {
   int temp = -1;
   while (temp == -1) {
     temp = GetRequestFromSite();
+    Serial.println(temp);
     if (casesInCountry != temp && temp != -1)
     {
       casesInCountry = temp;
