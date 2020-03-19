@@ -154,8 +154,6 @@ int GetRequestFromSite()
     {
       Serial.print("Error on HTTP request ");
       Serial.println(httpCode);
-
-
     }
 
     http.end(); //Free the resources
@@ -171,15 +169,18 @@ void alarm() {
   delay(1000);
 }
 
+void activateDeepSleep() {
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0);
+  esp_sleep_enable_timer_wakeup(TIME_UNTIL_NEXT_SCAN);
+  esp_deep_sleep_start();
+}
 
 
 void setup () {
   //button_init();
   if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
     displayInfo(casesInCountry);
-    esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0);
-    esp_sleep_enable_timer_wakeup(TIME_UNTIL_NEXT_SCAN);
-    esp_deep_sleep_start();
+    activateDeepSleep();
   }
 
   ConnectToWifi();
@@ -188,7 +189,6 @@ void setup () {
   int temp = -1;
   while (temp == -1) {
     temp = GetRequestFromSite();
-    Serial.println(temp);
     if (casesInCountry != temp && temp != -1)
     {
       casesInCountry = temp;
@@ -197,14 +197,7 @@ void setup () {
       delay(1000);
     }
   }
-
-
-
-
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0);
-  esp_sleep_enable_timer_wakeup(TIME_UNTIL_NEXT_SCAN);
-  esp_deep_sleep_start();
-
+  activateDeepSleep();
 }
 
 
