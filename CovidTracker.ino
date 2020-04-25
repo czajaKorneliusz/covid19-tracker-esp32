@@ -35,6 +35,7 @@ const char* ssid = "yourNetwork";
 const char* password = "secretPassword";
 
 
+
 const String country = "Poland";//Country of intrest
 
 #define ALERT_PIN 33
@@ -135,6 +136,7 @@ int GetRequestFromSite()
             myString = myString.substring(myString.indexOf(country));
             String result = myString.substring(myString.indexOf("\">") + 2);
             String cases = result.substring(0, (result.indexOf("</")));
+            cases.replace(",","");
             if (
               isValidNumber(cases) && cases.toInt() != 0)
             {
